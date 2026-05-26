@@ -48,6 +48,14 @@
   }
 }
 
+.logout-section {
+  display: flex;
+  justify-content: flex-end;
+  position: absolute;
+  right: 1.5rem;
+  top: 1.5rem;
+}
+
 /* Interview Content */
 .interview-content {
   flex: 1;
@@ -359,9 +367,6 @@
   }
 }
 
-
-
-
 /* Footer Section */
 .footer-section {
   flex-shrink: 0;
@@ -454,7 +459,6 @@
     transform: rotate(360deg);
   }
 }
-
 
 /* =========================
    PAGE SCROLL FIX
@@ -566,11 +570,7 @@ body,
 
   inset: 0;
 
-  background: linear-gradient(
-    135deg,
-    rgba(255, 0, 110, 0.08),
-    transparent 40%
-  );
+  background: linear-gradient(135deg, rgba(255, 0, 110, 0.08), transparent 40%);
 
   opacity: 0;
 

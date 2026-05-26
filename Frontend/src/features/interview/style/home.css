@@ -45,6 +45,14 @@
   margin: 0;
 }
 
+.logout-section {
+  display: flex;
+  justify-content: flex-end;
+  position: absolute;
+  right: 1.5rem;
+  top: 1.5rem;
+}
+
 /* Interview Content */
 .interview-content {
   flex: 1;

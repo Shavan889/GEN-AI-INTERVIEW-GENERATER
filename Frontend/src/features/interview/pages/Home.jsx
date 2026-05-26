@@ -2,8 +2,10 @@ import React, { useState, useRef } from "react";
 import "../style/home.scss";
 import { useInterview } from "./../hooks/useInterview";
 import { useNavigate } from "react-router";
+import { useAuth } from ".../../../src/features/auth/hooks/useAuth";
 
 const Home = () => {
+  const { handleLogout } = useAuth();
   const { loading, generateReport, reports } = useInterview();
   const [jobDescription, setJobDescription] = useState("");
   const [selfDescription, setSelfDescription] = useState("");
@@ -23,6 +25,8 @@ const Home = () => {
       setResumeFile(file);
     }
   };
+
+  
 
   if (loading) {
     return (
@@ -92,7 +96,8 @@ const Home = () => {
       <section className="interview-container">
         {/* Header Section */}
         <div className="header-section">
-          <h1 className="main-title">
+         <div className="">
+           <h1 className="main-title">
             Create Your Custom{" "}
             <span className="highlight-text">Interview Plan</span>
           </h1>
@@ -100,6 +105,13 @@ const Home = () => {
             Let our AI analyze the job requirements and your unique profile to
             build a winning strategy.
           </p>
+         </div>
+        </div>
+
+        <div className="logout-section">
+          <button className="button primary-button logout" onClick={handleLogout}>
+            Logout
+          </button>
         </div>
 
         {/* Main Content */}
