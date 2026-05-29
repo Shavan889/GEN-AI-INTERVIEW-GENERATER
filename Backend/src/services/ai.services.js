@@ -151,21 +151,154 @@ async function generateInterviewReport({
 
 async function generatePdfFromText(textContent) {
   return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ margin: 50 });
+    const doc = new PDFDocument({
+      margin: 40,
+      size: "A4",
+    });
+
     const chunks = [];
 
     doc.on("data", (chunk) => chunks.push(chunk));
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
 
-    doc.font("Times-Roman").fontSize(12);
+    const sectionTitles = [
+      "PROFESSIONAL SUMMARY",
+      "SUMMARY",
+      "TECHNICAL SKILLS",
+      "SKILLS",
+      "PROFESSIONAL EXPERIENCE",
+      "EXPERIENCE",
+      "PROJECTS",
+      "EDUCATION",
+      "CERTIFICATIONS",
+    ];
 
-    textContent.split(/\r?\n/).forEach((line) => {
-      if (line.trim() === "") {
-        doc.moveDown(0.5);
-      } else {
-        doc.text(line, { lineGap: 4 });
+    const lines = textContent.split(/\r?\n/);
+
+    let isHeaderDone = false;
+
+    lines.forEach((line, index) => {
+      line = line.trim();
+
+      if (!line) {
+        doc.moveDown(0.4);
+        return;
       }
+
+      // Name
+      if (!isHeaderDone && index === 0) {
+        doc
+          .font("Helvetica-Bold")
+          .fontSize(24)
+          .fillColor("#1F2937")
+          .text(line, {
+            align: "center",
+          });
+
+        doc.moveDown(0.2);
+        return;
+      }
+
+      // Contact Line
+      if (!isHeaderDone && index <= 2) {
+        doc
+          .font("Helvetica")
+          .fontSize(10)
+          .fillColor("#4B5563")
+          .text(line, {
+            align: "center",
+          });
+
+        if (index === 2) {
+          isHeaderDone = true;
+
+          doc.moveDown(0.5);
+
+          doc
+            .moveTo(50, doc.y)
+            .lineTo(550, doc.y)
+            .strokeColor("#2563EB")
+            .lineWidth(1.5)
+            .stroke();
+
+          doc.moveDown();
+        }
+
+        return;
+      }
+
+      // Section Heading
+      if (
+        sectionTitles.some(
+          (heading) => line.toUpperCase() === heading
+        )
+      ) {
+        doc.moveDown(0.8);
+
+        doc
+          .font("Helvetica-Bold")
+          .fontSize(14)
+          .fillColor("#2563EB")
+          .text(line);
+
+        doc.moveDown(0.2);
+
+        doc
+          .moveTo(50, doc.y)
+          .lineTo(550, doc.y)
+          .strokeColor("#2563EB")
+          .lineWidth(1)
+          .stroke();
+
+        doc.moveDown(0.4);
+
+        return;
+      }
+
+      // Bullet points
+      if (
+        line.startsWith("-") ||
+        line.startsWith("•")
+      ) {
+        doc
+          .font("Helvetica")
+          .fontSize(10.5)
+          .fillColor("#111827")
+          .text(`• ${line.replace(/^[-•]\s*/, "")}`, {
+            indent: 12,
+            lineGap: 3,
+          });
+
+        return;
+      }
+
+      // Project / Job Titles
+      if (
+        line.includes("Tech:") ||
+        line.includes("|") ||
+        line.includes("–")
+      ) {
+        doc
+          .font("Helvetica-Bold")
+          .fontSize(11)
+          .fillColor("#111827")
+          .text(line, {
+            lineGap: 3,
+          });
+
+        return;
+      }
+
+      // Normal text
+      doc
+        .font("Helvetica")
+        .fontSize(10.5)
+        .fillColor("#374151")
+        .text(line, {
+          lineGap: 3,
+          align: "left",
+        });
     });
 
     doc.end();
