@@ -72,21 +72,25 @@ const Home = () => {
   };
 
   const handleGenerateReport = async () => {
+  try {
     const resumeFile = resumeInputRef.current.files[0];
+
     const data = await generateReport({
       jobDescription,
       selfDescription,
       resumeFile,
     });
 
-    navigate(`/interview/${data._id}`);
+    if (!data || !data._id) {
+      console.error("Invalid response:", data);
+      return;
+    }
 
-    console.log({
-      jobDescription,
-      resumeFile,
-      selfDescription,
-    });
-  };
+    navigate(`/interview/${data.interviewReport._id}`);
+  } catch (error) {
+    console.error("Generate Report Error:", error);
+  }
+};
 
   const isFormValid =
     jobDescription.trim() && (resumeFile || selfDescription.trim());
