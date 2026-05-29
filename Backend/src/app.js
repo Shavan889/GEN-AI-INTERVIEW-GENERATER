@@ -15,7 +15,7 @@ app.use(
       "https://gen-ai-interview-generater.vercel.app",
     ],
     credentials: true,
-  }),
+  })
 );
 app.use(express.json());
 app.use(cookieParser());
