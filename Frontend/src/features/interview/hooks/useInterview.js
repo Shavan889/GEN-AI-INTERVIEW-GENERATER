@@ -84,11 +84,21 @@ export const useInterview = () => {
     try {
       response = await getAllInterviewReports();
 
-      setReports(response.interviewReports);
+      console.log("Get all reports response:", response);
 
-      return response.interviewReports;
+      if (!response || !response.interviewReports) {
+        console.warn("Invalid response structure for getAllReports:", response);
+        setReports([]);
+        return [];
+      }
+
+      const reportsArray = Array.isArray(response.interviewReports) ? response.interviewReports : [];
+      setReports(reportsArray);
+
+      return reportsArray;
     } catch (err) {
-      console.log(err);
+      console.error("Error fetching reports:", err);
+      setReports([]);
       return [];
     } finally {
       setLoading(false);

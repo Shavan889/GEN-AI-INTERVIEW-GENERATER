@@ -73,6 +73,12 @@ const Home = () => {
 
   const handleGenerateReport = async () => {
   try {
+    // Verify resume file exists
+    if (!resumeInputRef.current || !resumeInputRef.current.files || !resumeInputRef.current.files[0]) {
+      console.error("No resume file found in ref");
+      return;
+    }
+    
     const resumeFile = resumeInputRef.current.files[0];
 
     console.log("Calling generateReport...");
