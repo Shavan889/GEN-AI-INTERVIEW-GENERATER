@@ -37,11 +37,18 @@ export const useInterview = () => {
         resumeFile,
       });
 
+      console.log("Full API Response:", response);
+      console.log("Interview Report Data:", response.interviewReport);
+
+      if (!response || !response.interviewReport) {
+        throw new Error("Invalid response structure: missing interviewReport");
+      }
+
       setReport(response.interviewReport);
 
       return response.interviewReport;
     } catch (err) {
-      console.log(err);
+      console.error("Error in generateReport:", err);
       return null;
     } finally {
       setLoading(false);

@@ -75,22 +75,29 @@ const Home = () => {
   try {
     const resumeFile = resumeInputRef.current.files[0];
 
+    console.log("Calling generateReport...");
     const data = await generateReport({
       jobDescription,
       selfDescription,
       resumeFile,
     });
 
-console.log("API Response:", data);
+    console.log("Response from generateReport:", data);
+    console.log("Type of data:", typeof data);
+    console.log("data._id:", data?._id);
 
     if (!data || !data._id) {
-      console.error("Invalid response:", data);
+      console.error("Invalid response structure. Expected data to have _id. Received:", data);
       return;
     }
 
+    console.log("Navigating to:", `/interview/${data._id}`);
     navigate(`/interview/${data._id}`);
   } catch (error) {
-    console.error("Generate Report Error:", error);
+    console.error("Generate Report Error Details:");
+    console.error("Error message:", error.message);
+    console.error("Error stack:", error.stack);
+    console.error("Full error:", error);
   }
 };
 
@@ -248,28 +255,34 @@ console.log("API Response:", data);
       
 
         {/*Recent Reports lists */}
-        {reports.length > 0 && (
+        {reports && reports.length > 0 && (
           <section className="recent-reports">
             <h2>🕘 My Recent Interview Plans</h2>
             <ul className="reports-list">
-              {reports.map((report) => (
-                <li
-                  key={report._id}
-                  className="report-item"
-                  onClick={() => navigate(`/interview/${report._id}`)}
-                >
-                  <h3>{report.title || "Untitled Position"}</h3>
-                  <p className="report-meta">
-                    Generated on{" "}
-                    {new Date(report.createdAt).toLocaleDateString()}
-                  </p>
-                  <p
-                    className={`match-score ${report.matchScore >= 80 ? "score--high" : report.matchScore >= 60 ? "score--mid" : "score--low"}`}
+              {reports.map((report) => {
+                if (!report || !report._id) {
+                  console.warn("Skipping report with missing _id:", report);
+                  return null;
+                }
+                return (
+                  <li
+                    key={report._id}
+                    className="report-item"
+                    onClick={() => navigate(`/interview/${report._id}`)}
                   >
-                    Match Score: {report.matchScore}%
-                  </p>
-                </li>
-              ))}
+                    <h3>{report.title || "Untitled Position"}</h3>
+                    <p className="report-meta">
+                      Generated on{" "}
+                      {new Date(report.createdAt).toLocaleDateString()}
+                    </p>
+                    <p
+                      className={`match-score ${report.matchScore >= 80 ? "score--high" : report.matchScore >= 60 ? "score--mid" : "score--low"}`}
+                    >
+                      Match Score: {report.matchScore}%
+                    </p>
+                  </li>
+                );
+              })}
             </ul>
           </section>
         )}
