@@ -81,6 +81,8 @@ const Home = () => {
       resumeFile,
     });
 
+console.log("API Response:", data);
+
     if (!data || !data._id) {
       console.error("Invalid response:", data);
       return;
