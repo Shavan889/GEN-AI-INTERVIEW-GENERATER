@@ -19,3 +19,10 @@ server.on("clientError", (err, socket) => {
     socket.end("HTTP/1.1 400 Bad Request\r\n\r\n");
   }
 });
+
+
+console.log("GOOGLE_API_KEY exists:", !!process.env.GOOGLE_API_KEY);
+console.log(
+  "GOOGLE_API_KEY prefix:",
+  process.env.GOOGLE_API_KEY?.substring(0, 10)
+);
