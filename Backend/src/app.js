@@ -15,8 +15,14 @@ app.use(
       "https://gen-ai-interview-generater.vercel.app",
     ],
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
+// Handle preflight requests explicitly
+app.options("*", cors());
+
 app.use(express.json());
 app.use(cookieParser());
 /*using all the routes here*/
