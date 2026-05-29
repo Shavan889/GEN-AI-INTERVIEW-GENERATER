@@ -134,19 +134,53 @@ async function generateInterviewReport({
   selfDescription,
   jobDescription,
 }) {
-  const prompt = `Generate a JSON interview report for a candidate with the following details:\n- Resume: ${resume}\n- Self Description: ${selfDescription}\n- Job Description: ${jobDescription}\n\nReturn only valid JSON that matches the requested structure. Provide at least:\n- 4 technical questions\n- 3 behavioral questions\n- 2 skill gaps\n- 5 days of preparation plan\nInclude question intention and answer guidance for each question.`;
+  const prompt = `
+Generate a JSON interview report for a candidate with the following details:
 
-  const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      responseJsonSchema: interviewReportJsonSchema,
-    },
-  });
+Resume: ${resume}
 
-  const data = JSON.parse(response.text);
-  return interviewReportSchema.parse(data);
+Self Description: ${selfDescription}
+
+Job Description: ${jobDescription}
+
+Return only valid JSON.
+Provide:
+- 4 technical questions
+- 3 behavioral questions
+- 2 skill gaps
+- 5 days preparation plan
+`;
+
+  let lastError;
+
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseJsonSchema: interviewReportJsonSchema,
+        },
+      });
+
+      const data = JSON.parse(response.text);
+
+      return interviewReportSchema.parse(data);
+    } catch (error) {
+      lastError = error;
+
+      if (error.status !== 503) {
+        throw error;
+      }
+
+      console.log(`Gemini busy. Retry ${attempt}/3...`);
+
+      await new Promise((resolve) => setTimeout(resolve, attempt * 3000));
+    }
+  }
+
+  throw lastError;
 }
 
 async function generatePdfFromHtml(htmlContent) {
@@ -184,14 +218,14 @@ async function generateResumePdf({ resume, selfDescription, jobDescription }) {
                         The resume should not be so lengthy, it should ideally be 1-2 pages long when converted to PDF. Focus on quality rather than quantity and make sure to include all the relevant information that can increase the candidate's chances of getting an interview call for the given job description.
                     `;
 
-  const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: zodToJsonSchema(resumePdfSchema),
-    },
-  });
+ const response = await ai.models.generateContent({
+  model: "gemini-2.5-flash",
+  contents: prompt,
+  config: {
+    responseMimeType: "application/json",
+    responseSchema: zodToJsonSchema(resumePdfSchema),
+  },
+});
 
   const jsonContent = JSON.parse(response.text);
 

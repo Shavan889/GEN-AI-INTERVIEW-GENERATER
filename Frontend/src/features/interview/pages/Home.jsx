@@ -82,13 +82,12 @@ const Home = () => {
     });
 
 console.log("API Response:", data);
+if (!data?.interviewReport?._id) {
+  console.error("Invalid response:", data);
+  return;
+}
 
-    if (!data || !data._id) {
-      console.error("Invalid response:", data);
-      return;
-    }
-
-    navigate(`/interview/${data.interviewReport._id}`);
+navigate(`/interview/${data.interviewReport._id}`);
   } catch (error) {
     console.error("Generate Report Error:", error);
   }
