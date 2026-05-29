@@ -2,7 +2,6 @@ const express = require("express");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 
-/*require all the routes here*/
 const authRouter = require("./routes/auth.routes");
 const interviewRouter = require("./routes/interview.routes");
 
@@ -15,17 +14,12 @@ app.use(
       "https://gen-ai-interview-generater.vercel.app",
     ],
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
-// Handle preflight requests explicitly
-app.options("/*", cors());
-
 app.use(express.json());
 app.use(cookieParser());
-/*using all the routes here*/
+
 app.use("/api/auth", authRouter);
 app.use("/api/interview", interviewRouter);
 
