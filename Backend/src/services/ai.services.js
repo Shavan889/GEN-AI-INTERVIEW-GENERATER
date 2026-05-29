@@ -154,28 +154,44 @@ async function generatePdfFromHtml(htmlContent) {
   try {
     const launchOptions = {
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--single-process' // For Render environments
+      ],
+      timeout: 30000, // 30 second timeout for browser launch
     };
     
-    // For production environments like Render
-    if (process.env.NODE_ENV === 'production') {
-      launchOptions.args.push('--disable-dev-shm-usage');
-    }
-    
+    console.log("Launching Puppeteer browser...");
     browser = await puppeteer.launch(launchOptions);
+    
     const page = await browser.newPage();
-    await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+    page.setDefaultTimeout(30000); // 30 second timeout for page operations
+    page.setDefaultNavigationTimeout(30000);
+    
+    console.log("Setting page content...");
+    await page.setContent(htmlContent, { waitUntil: "domcontentloaded" }); // Changed from networkidle0
 
+    console.log("Generating PDF...");
     const pdfBuffer = await page.pdf({
       format: "A4",
+      margin: { top: "10mm", right: "10mm", bottom: "10mm", left: "10mm" },
     });
+    
     await browser.close();
+    console.log("PDF generated successfully");
 
     return pdfBuffer;
   } catch (error) {
     console.error("Error generating PDF from HTML:", error);
     if (browser) {
-      await browser.close();
+      try {
+        await browser.close();
+      } catch (closeErr) {
+        console.error("Error closing browser:", closeErr);
+      }
     }
     throw new Error(`Failed to generate PDF: ${error.message}`);
   }
@@ -203,20 +219,37 @@ async function generateResumePdf({ resume, selfDescription, jobDescription }) {
                         The resume should not be so lengthy, it should ideally be 1-2 pages long when converted to PDF. Focus on quality rather than quantity and make sure to include all the relevant information that can increase the candidate's chances of getting an interview call for the given job description.
                     `;
 
-  const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: zodToJsonSchema(resumePdfSchema),
-    },
-  });
+  try {
+    console.log("Calling Gemini AI to generate resume HTML...");
+    
+    // Create a promise that rejects after timeout
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Gemini API call timed out after 60 seconds")), 60000)
+    );
 
-  const jsonContent = JSON.parse(response.text);
+    const response = await Promise.race([
+      ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: zodToJsonSchema(resumePdfSchema),
+        },
+      }),
+      timeoutPromise,
+    ]);
 
-  const pdfBuffer = await generatePdfFromHtml(jsonContent.html);
+    console.log("Gemini API response received");
+    const jsonContent = JSON.parse(response.text);
 
-  return pdfBuffer;
+    console.log("Converting HTML to PDF...");
+    const pdfBuffer = await generatePdfFromHtml(jsonContent.html);
+
+    return pdfBuffer;
+  } catch (error) {
+    console.error("Error in generateResumePdf:", error);
+    throw error;
+  }
 }
 
 module.exports = { generateInterviewReport, generateResumePdf };

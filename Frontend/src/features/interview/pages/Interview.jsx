@@ -222,8 +222,10 @@ const Interview = () => {
                 getResumePdf(interviewId);
               }}
               className="button primary-button"
+              disabled={loading}
+              style={{ cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.6 : 1 }}
             >
-              Download AI generated Resume 🤖
+              {loading ? "⏳ Generating..." : "Download AI generated Resume 🤖"}
             </button>
           </div>
         </aside>

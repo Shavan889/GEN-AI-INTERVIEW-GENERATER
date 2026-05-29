@@ -109,6 +109,7 @@ export const useInterview = () => {
         setLoading(true)
         try {
             console.log("Starting PDF download for report:", interviewReportId);
+            
             const response = await generateResumePdf( {interviewReportId} )
             
             console.log("PDF response received, creating blob...");
@@ -125,9 +126,20 @@ export const useInterview = () => {
         }
         catch (error) {
             console.error("Error downloading resume PDF:", error);
-            const errorMsg = error.response?.data?.error || error.message || "Failed to download resume. Please try again.";
+            
+            let errorMsg = "Failed to download resume. ";
+            if (error.response?.status === 503) {
+                errorMsg = "⏳ Backend service is currently processing. This can take 30-60 seconds. Please try again in a moment or retry the download.";
+            } else if (error.response?.status === 500) {
+                errorMsg += error.response?.data?.error || "Server error. Please try again later.";
+            } else if (error.response?.status === 504) {
+                errorMsg = "⏱️ Request timed out. The PDF generation took too long. Please try again.";
+            } else {
+                errorMsg += error.response?.data?.error || error.message || "Please try again.";
+            }
+            
             console.error("Error details:", errorMsg);
-            alert(`Error: ${errorMsg}`);
+            alert(errorMsg);
         } finally {
             setLoading(false)
         }
