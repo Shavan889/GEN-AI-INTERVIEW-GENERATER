@@ -202,13 +202,9 @@ async function generatePdfFromText(textContent) {
 
       // Contact Line
       if (!isHeaderDone && index <= 2) {
-        doc
-          .font("Helvetica")
-          .fontSize(10)
-          .fillColor("#4B5563")
-          .text(line, {
-            align: "center",
-          });
+        doc.font("Helvetica").fontSize(10).fillColor("#4B5563").text(line, {
+          align: "center",
+        });
 
         if (index === 2) {
           isHeaderDone = true;
@@ -229,18 +225,10 @@ async function generatePdfFromText(textContent) {
       }
 
       // Section Heading
-      if (
-        sectionTitles.some(
-          (heading) => line.toUpperCase() === heading
-        )
-      ) {
+      if (sectionTitles.some((heading) => line.toUpperCase() === heading)) {
         doc.moveDown(0.8);
 
-        doc
-          .font("Helvetica-Bold")
-          .fontSize(14)
-          .fillColor("#2563EB")
-          .text(line);
+        doc.font("Helvetica-Bold").fontSize(14).fillColor("#2563EB").text(line);
 
         doc.moveDown(0.2);
 
@@ -257,10 +245,7 @@ async function generatePdfFromText(textContent) {
       }
 
       // Bullet points
-      if (
-        line.startsWith("-") ||
-        line.startsWith("•")
-      ) {
+      if (line.startsWith("-") || line.startsWith("•")) {
         doc
           .font("Helvetica")
           .fontSize(10.5)
@@ -277,7 +262,10 @@ async function generatePdfFromText(textContent) {
       if (
         line.includes("Tech:") ||
         line.includes("|") ||
-        line.includes("–")
+        line.includes("–") ||
+        (!line.startsWith("•") &&
+          line.length < 60 &&
+          !sectionTitles.includes(line.toUpperCase()))
       ) {
         doc
           .font("Helvetica-Bold")
@@ -291,14 +279,10 @@ async function generatePdfFromText(textContent) {
       }
 
       // Normal text
-      doc
-        .font("Helvetica")
-        .fontSize(10.5)
-        .fillColor("#374151")
-        .text(line, {
-          lineGap: 3,
-          align: "left",
-        });
+      doc.font("Helvetica").fontSize(10.5).fillColor("#374151").text(line, {
+        lineGap: 3,
+        align: "left",
+      });
     });
 
     doc.end();
