@@ -131,7 +131,9 @@ export const useInterview = () => {
             if (error.response?.status === 503) {
                 errorMsg = "⏳ Backend service is currently processing. This can take 30-60 seconds. Please try again in a moment or retry the download.";
             } else if (error.response?.status === 500) {
-                errorMsg += error.response?.data?.error || "Server error. Please try again later.";
+                const serverError = error.response?.data?.error || "Server error. Please try again later.";
+                const details = error.response?.data?.details;
+                errorMsg += `${serverError}${details ? `\nDetails: ${details}` : ""}`;
             } else if (error.response?.status === 504) {
                 errorMsg = "⏱️ Request timed out. The PDF generation took too long. Please try again.";
             } else {
