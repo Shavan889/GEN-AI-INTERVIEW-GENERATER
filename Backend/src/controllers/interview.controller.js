@@ -96,16 +96,19 @@ async function getAllInterviewReportsController(req, res) {
 async function generateResumePdfController(req, res) {
   try {
     const { interviewReportId } = req.params;
+    console.log("PDF Generation Request:", interviewReportId);
 
     const interviewReport =
       await InterviewReportModel.findById(interviewReportId);
 
     if (!interviewReport) {
+      console.warn("Interview report not found:", interviewReportId);
       return res.status(404).json({
         message: "interview report not found",
       });
     }
 
+    console.log("Found interview report, generating PDF...");
     const { resume, jobDescription, selfDescription } = interviewReport;
 
     const pdfBuffer = await generateResumePdf({
@@ -114,6 +117,8 @@ async function generateResumePdfController(req, res) {
       selfDescription,
     });
 
+    console.log("PDF generated successfully, size:", pdfBuffer.length);
+
     res.set({
       "Content-Type": "application/pdf",
       "Content-Disposition": `attachment; filename=resume_${interviewReportId}.pdf`,
@@ -121,9 +126,21 @@ async function generateResumePdfController(req, res) {
     res.send(pdfBuffer);
   } catch (error) {
     console.error("Resume PDF generation failed:", error);
-    return res.status(500).json({
-      message: "Failed to generate resume PDF.",
+    console.error("Error stack:", error.stack);
+    console.error("Error name:", error.name);
+
+    const statusCode =
+      error?.status === 503 || error?.code === 503 || error?.error?.code === 503
+        ? 503
+        : 500;
+
+    return res.status(statusCode).json({
+      message:
+        statusCode === 503
+          ? "Resume PDF service is currently unavailable. Please try again later."
+          : "Failed to generate resume PDF.",
       error: error.message,
+      details: error.stack,
     });
   }
 }
