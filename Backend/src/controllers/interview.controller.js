@@ -6,22 +6,62 @@ const {
 const InterviewReportModel = require("../models/interviewReport.model");
 
 /**
- * Helper function to parse PDF with fallback for different module exports
+ * Helper function to parse PDF with comprehensive fallback strategies
  */
 async function parsePdfBuffer(buffer) {
   try {
-    // Try direct function call
+    console.log("Attempting to parse PDF with buffer size:", buffer.length);
+    console.log("pdfParse type:", typeof pdfParse);
+    console.log("pdfParse constructor name:", pdfParse?.constructor?.name);
+    
+    let parseFunction = null;
+    let result = null;
+    
+    // Strategy 1: Direct function call
     if (typeof pdfParse === 'function') {
+      console.log("✓ Strategy 1: Using pdfParse as direct function");
       return await pdfParse(buffer);
     }
-    // Try with .default property
+    
+    // Strategy 2: Try .default property (ES6 export)
     if (pdfParse.default && typeof pdfParse.default === 'function') {
+      console.log("✓ Strategy 2: Using pdfParse.default as function");
       return await pdfParse.default(buffer);
     }
-    throw new Error("pdf-parse module is not properly exported");
+    
+    // Strategy 3: Check for PDFParser class
+    if (pdfParse.PDFParser && typeof pdfParse.PDFParser === 'function') {
+      console.log("✓ Strategy 3: Using PDFParser class");
+      const parser = new pdfParse.PDFParser();
+      return new Promise((resolve, reject) => {
+        parser.on('pdfParser_dataReady', (data) => {
+          resolve({ text: data.text, numpages: data.Pages?.length || 0 });
+        });
+        parser.on('pdfParser_dataError', (error) => {
+          reject(error);
+        });
+        parser.parseBuffer(buffer);
+      });
+    }
+    
+    // Strategy 4: Try importing the parser directly
+    try {
+      console.log("✓ Strategy 4: Trying alternative require path");
+      const PDFParser = require('pdf-parse/lib/PDFParser.js');
+      if (typeof PDFParser === 'function') {
+        return await PDFParser(buffer);
+      }
+    } catch (e) {
+      console.log("Strategy 4 failed:", e.message);
+    }
+    
+    // Strategy 5: Log what we actually have
+    console.log("Available properties on pdfParse:", Object.keys(pdfParse || {}));
+    throw new Error(`pdf-parse module export unrecognized. Type: ${typeof pdfParse}, Keys: ${Object.keys(pdfParse || {}).join(', ')}`);
+    
   } catch (error) {
     console.error("PDF parsing error:", error.message);
-    throw new Error(`Failed to parse PDF: ${error.message}`);
+    throw error;
   }
 }
 
@@ -72,12 +112,24 @@ async function generateInterViewReportController(req, res) {
     });
   } catch (error) {
     console.error("Interview report generation failed:", error);
-    console.error("Error details:", error.message);
+    console.error("Error name:", error.name);
+    console.error("Error message:", error.message);
+    console.error("Error stack:", error.stack);
+    
+    // Provide specific guidance for pdf-parse errors
+    let userMessage = "Failed to generate interview report.";
+    if (error.message && error.message.includes("pdf-parse")) {
+      userMessage = "Failed to parse the uploaded PDF. Please ensure it's a valid PDF file.";
+    }
     
     return res.status(500).json({
-      message: "Failed to generate interview report.",
+      message: userMessage,
       error: error.message,
-      details: process.env.NODE_ENV === "development" ? error.stack : undefined,
+      details: process.env.NODE_ENV === "development" ? {
+        stack: error.stack,
+        type: error.name,
+        diagnostic: error.message.includes('pdf-parse') ? "PDF parsing issue - check logs" : null
+      } : undefined,
     });
   }
 }
