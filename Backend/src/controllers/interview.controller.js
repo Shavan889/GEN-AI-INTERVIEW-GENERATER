@@ -18,34 +18,46 @@ async function generateInterViewReportController(req, res) {
   }
 
   try {
-    const resumeContent = await new pdfParse.PDFParse(
-      Uint8Array.from(req.file.buffer),
-    ).getText();
+    console.log("Parsing resume PDF...");
+    const resumeContent = await pdfParse(req.file.buffer);
+    const resumeText = resumeContent.text;
     const { selfDescription, jobDescription } = req.body;
 
+    if (!selfDescription || !jobDescription) {
+      return res.status(400).json({
+        message: "selfDescription and jobDescription are required fields.",
+      });
+    }
+
+    console.log("Generating interview report...");
     const interViewReportByAi = await generateInterviewReport({
-      resume: resumeContent.text,
+      resume: resumeText,
       selfDescription,
       jobDescription,
     });
 
+    console.log("Creating interview report in database...");
     const interviewReport = await InterviewReportModel.create({
       user: req.user.id,
-      resume: resumeContent.text,
+      resume: resumeText,
       selfDescription,
       jobDescription,
       ...interViewReportByAi,
     });
 
+    console.log("Interview report created successfully:", interviewReport._id);
     return res.status(201).json({
       message: "Interview report generated successfully.",
       interviewReport,
     });
   } catch (error) {
     console.error("Interview report generation failed:", error);
+    console.error("Error details:", error.message);
+    
     return res.status(500).json({
       message: "Failed to generate interview report.",
       error: error.message,
+      details: process.env.NODE_ENV === "development" ? error.stack : undefined,
     });
   }
 }

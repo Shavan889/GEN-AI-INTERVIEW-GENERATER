@@ -41,14 +41,30 @@ export const useInterview = () => {
       console.log("Interview Report Data:", response.interviewReport);
 
       if (!response || !response.interviewReport) {
-        throw new Error("Invalid response structure: missing interviewReport");
+        const errorMsg = response?.error || "Invalid response structure: missing interviewReport";
+        throw new Error(errorMsg);
       }
 
       setReport(response.interviewReport);
-
       return response.interviewReport;
     } catch (err) {
       console.error("Error in generateReport:", err);
+      
+      // Display user-friendly error message
+      let userErrorMsg = "Failed to generate interview report.";
+      if (err.response?.status === 500) {
+        userErrorMsg = `Server Error: ${err.response?.data?.error || "Failed to generate report. Please check your input and try again."}`;
+      } else if (err.response?.status === 400) {
+        userErrorMsg = `Invalid Input: ${err.response?.data?.message || "Please ensure all fields are filled correctly."}`;
+      } else if (err.response?.status === 401) {
+        userErrorMsg = "Authentication failed. Please login again.";
+      } else if (err.message) {
+        userErrorMsg = err.message;
+      }
+      
+      console.error("User-facing error:", userErrorMsg);
+      alert(userErrorMsg);
+      
       return null;
     } finally {
       setLoading(false);
@@ -63,12 +79,26 @@ export const useInterview = () => {
 
     try {
       response = await getInterviewById(interviewId);
+      
+      if (!response || !response.interviewReport) {
+        throw new Error("Invalid response structure: missing interviewReport");
+      }
 
       setReport(response.interviewReport);
-
       return response.interviewReport;
     } catch (err) {
-      console.log(err);
+      console.error("Error fetching report by ID:", err);
+      
+      let userErrorMsg = "Failed to fetch interview report.";
+      if (err.response?.status === 404) {
+        userErrorMsg = "Interview report not found.";
+      } else if (err.response?.status === 500) {
+        userErrorMsg = `Server Error: ${err.response?.data?.error || "Failed to fetch report. Please try again later."}`;
+      }
+      
+      console.error("User-facing error:", userErrorMsg);
+      alert(userErrorMsg);
+      
       return null;
     } finally {
       setLoading(false);

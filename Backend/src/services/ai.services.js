@@ -134,19 +134,31 @@ async function generateInterviewReport({
   selfDescription,
   jobDescription,
 }) {
-  const prompt = `Generate a JSON interview report for a candidate with the following details:\n- Resume: ${resume}\n- Self Description: ${selfDescription}\n- Job Description: ${jobDescription}\n\nReturn only valid JSON that matches the requested structure. Provide at least:\n- 4 technical questions\n- 3 behavioral questions\n- 2 skill gaps\n- 5 days of preparation plan\nInclude question intention and answer guidance for each question.`;
+  try {
+    const prompt = `Generate a JSON interview report for a candidate with the following details:\n- Resume: ${resume}\n- Self Description: ${selfDescription}\n- Job Description: ${jobDescription}\n\nReturn only valid JSON that matches the requested structure. Provide at least:\n- 4 technical questions\n- 3 behavioral questions\n- 2 skill gaps\n- 5 days of preparation plan\nInclude question intention and answer guidance for each question.`;
 
-  const response = await ai.models.generateContent({
-    model: "gemini-3.1-pro-preview",
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      responseJsonSchema: interviewReportJsonSchema,
-    },
-  });
+    const response = await ai.models.generateContent({
+      model: "gemini-2.0-pro",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseJsonSchema: interviewReportJsonSchema,
+      },
+    });
 
-  const data = JSON.parse(response.text);
-  return interviewReportSchema.parse(data);
+    if (!response || !response.text) {
+      throw new Error("Empty response from AI model");
+    }
+
+    const data = JSON.parse(response.text);
+    const validatedData = interviewReportSchema.parse(data);
+    
+    console.log("Interview report generated successfully");
+    return validatedData;
+  } catch (error) {
+    console.error("Error in generateInterviewReport:", error.message);
+    throw new Error(`AI Report Generation Failed: ${error.message}`);
+  }
 }
 
 async function generatePdfFromText(textContent) {
