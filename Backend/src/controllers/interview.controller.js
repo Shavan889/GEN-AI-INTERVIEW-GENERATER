@@ -1,4 +1,4 @@
-const pdfParse = require("pdf-parse");
+const pdfjsLib = require('pdfjs-dist');
 const {
   generateInterviewReport,
   generateResumePdf,
@@ -6,62 +6,43 @@ const {
 const InterviewReportModel = require("../models/interviewReport.model");
 
 /**
- * Helper function to parse PDF with comprehensive fallback strategies
+ * Helper function to parse PDF using pdfjs-dist
  */
 async function parsePdfBuffer(buffer) {
   try {
-    console.log("Attempting to parse PDF with buffer size:", buffer.length);
-    console.log("pdfParse type:", typeof pdfParse);
-    console.log("pdfParse constructor name:", pdfParse?.constructor?.name);
+    console.log("Parsing PDF with pdfjs-dist, buffer size:", buffer.length);
     
-    let parseFunction = null;
-    let result = null;
+    // Set worker path for pdfjs
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
     
-    // Strategy 1: Direct function call
-    if (typeof pdfParse === 'function') {
-      console.log("✓ Strategy 1: Using pdfParse as direct function");
-      return await pdfParse(buffer);
-    }
+    // Load PDF document
+    const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+    console.log("PDF loaded, total pages:", pdf.numPages);
     
-    // Strategy 2: Try .default property (ES6 export)
-    if (pdfParse.default && typeof pdfParse.default === 'function') {
-      console.log("✓ Strategy 2: Using pdfParse.default as function");
-      return await pdfParse.default(buffer);
-    }
+    let fullText = '';
     
-    // Strategy 3: Check for PDFParser class
-    if (pdfParse.PDFParser && typeof pdfParse.PDFParser === 'function') {
-      console.log("✓ Strategy 3: Using PDFParser class");
-      const parser = new pdfParse.PDFParser();
-      return new Promise((resolve, reject) => {
-        parser.on('pdfParser_dataReady', (data) => {
-          resolve({ text: data.text, numpages: data.Pages?.length || 0 });
-        });
-        parser.on('pdfParser_dataError', (error) => {
-          reject(error);
-        });
-        parser.parseBuffer(buffer);
-      });
-    }
-    
-    // Strategy 4: Try importing the parser directly
-    try {
-      console.log("✓ Strategy 4: Trying alternative require path");
-      const PDFParser = require('pdf-parse/lib/PDFParser.js');
-      if (typeof PDFParser === 'function') {
-        return await PDFParser(buffer);
+    // Extract text from each page
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      try {
+        const page = await pdf.getPage(pageNum);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map(item => item.str).join(' ');
+        fullText += pageText + '\n';
+      } catch (pageError) {
+        console.warn(`Error extracting page ${pageNum}:`, pageError.message);
       }
-    } catch (e) {
-      console.log("Strategy 4 failed:", e.message);
     }
     
-    // Strategy 5: Log what we actually have
-    console.log("Available properties on pdfParse:", Object.keys(pdfParse || {}));
-    throw new Error(`pdf-parse module export unrecognized. Type: ${typeof pdfParse}, Keys: ${Object.keys(pdfParse || {}).join(', ')}`);
+    console.log("✓ PDF parsed successfully, extracted text length:", fullText.length);
+    
+    return {
+      text: fullText.trim() || 'PDF content could not be extracted',
+      numpages: pdf.numPages
+    };
     
   } catch (error) {
     console.error("PDF parsing error:", error.message);
-    throw error;
+    throw new Error(`Failed to parse PDF: ${error.message}`);
   }
 }
 
