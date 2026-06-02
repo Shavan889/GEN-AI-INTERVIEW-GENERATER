@@ -6,6 +6,26 @@ const {
 const InterviewReportModel = require("../models/interviewReport.model");
 
 /**
+ * Helper function to parse PDF with fallback for different module exports
+ */
+async function parsePdfBuffer(buffer) {
+  try {
+    // Try direct function call
+    if (typeof pdfParse === 'function') {
+      return await pdfParse(buffer);
+    }
+    // Try with .default property
+    if (pdfParse.default && typeof pdfParse.default === 'function') {
+      return await pdfParse.default(buffer);
+    }
+    throw new Error("pdf-parse module is not properly exported");
+  } catch (error) {
+    console.error("PDF parsing error:", error.message);
+    throw new Error(`Failed to parse PDF: ${error.message}`);
+  }
+}
+
+/**
  * @description Controller to generate interview report based on user's resume, self-description, and job description.
  */
 
@@ -19,7 +39,7 @@ async function generateInterViewReportController(req, res) {
 
   try {
     console.log("Parsing resume PDF...");
-    const resumeContent = await pdfParse(req.file.buffer);
+    const resumeContent = await parsePdfBuffer(req.file.buffer);
     const resumeText = resumeContent.text;
     const { selfDescription, jobDescription } = req.body;
 

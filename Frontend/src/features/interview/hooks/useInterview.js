@@ -50,7 +50,7 @@ export const useInterview = () => {
     } catch (err) {
       console.error("Error in generateReport:", err);
       
-      // Display user-friendly error message
+      
       let userErrorMsg = "Failed to generate interview report.";
       if (err.response?.status === 500) {
         userErrorMsg = `Server Error: ${err.response?.data?.error || "Failed to generate report. Please check your input and try again."}`;
