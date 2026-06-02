@@ -15,8 +15,12 @@ async function parsePdfBuffer(buffer) {
     // Set worker path for pdfjs
     pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
     
+    // Convert Buffer to Uint8Array (pdfjs-dist requires Uint8Array)
+    const uint8Array = new Uint8Array(buffer);
+    console.log("Buffer converted to Uint8Array, size:", uint8Array.length);
+    
     // Load PDF document
-    const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+    const pdf = await pdfjsLib.getDocument({ data: uint8Array }).promise;
     console.log("PDF loaded, total pages:", pdf.numPages);
     
     let fullText = '';
